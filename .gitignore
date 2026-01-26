@@ -1,0 +1,11 @@
+.git/
+.github/
+.pytest_cache/
+.venv/
+.vscode/
+__pycache__/
+reports/
+screenshots/
+test/__pycache__
+pages/__pycache__
+geckodriver.log
