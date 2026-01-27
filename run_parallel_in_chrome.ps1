@@ -34,7 +34,9 @@ $jobs = @()
 
 $jobs += Start-Job {
     Set-Location $using:PROJECT_DIR
-    behave features/login.feature `
+    .\.venv\Scripts\Activate.ps1
+
+    python -m behave features/login.feature `
         -D browser=chrome `
         -f allure_behave.formatter:AllureFormatter `
         -o reports/allure-results/worker-1
@@ -42,7 +44,9 @@ $jobs += Start-Job {
 
 $jobs += Start-Job {
     Set-Location $using:PROJECT_DIR
-    behave features/cart.feature `
+    .\.venv\Scripts\Activate.ps1
+
+    python -m behave features/cart.feature `
         -D browser=chrome `
         -f allure_behave.formatter:AllureFormatter `
         -o reports/allure-results/worker-2
@@ -50,7 +54,9 @@ $jobs += Start-Job {
 
 $jobs += Start-Job {
     Set-Location $using:PROJECT_DIR
-    behave features/checkout.feature `
+    .\.venv\Scripts\Activate.ps1
+
+    python -m behave features/checkout.feature `
         -D browser=chrome `
         -f allure_behave.formatter:AllureFormatter `
         -o reports/allure-results/worker-3
@@ -65,17 +71,31 @@ Receive-Job $jobs | Out-Host
 Remove-Job $jobs
 
 # ---------------------------------------------
+# Merge Allure results from workers
+# ---------------------------------------------
+Write-Host "Merging Allure results from workers..." -ForegroundColor Cyan
+
+Get-ChildItem reports\allure-results -Recurse -Filter "*.json" |
+    Move-Item -Destination reports\allure-results -Force
+
+# ---------------------------------------------
 # Generate Allure HTML report
 # ---------------------------------------------
 Write-Host "Generating Allure HTML report..." -ForegroundColor Cyan
-cmd /c "allure generate reports/allure-results/* -o reports/allure-report"
-
+cmd /c "allure generate reports/allure-results -o reports/allure-report"
 
 # ---------------------------------------------
-# Open Allure report (local only)
+# Open Allure report (LOCAL ONLY)
 # ---------------------------------------------
-Write-Host "Opening Allure report..." -ForegroundColor Green
-cmd /c "allure open reports/allure-report"
+Write-Host "CI variable:" $env:CI
+
+if (-not $env:CI) {
+    Write-Host "Opening Allure report..." -ForegroundColor Green
+    cmd /c "allure open reports/allure-report"
+}
+else {
+    Write-Host "CI detected, skipping allure open" -ForegroundColor Yellow
+}
 
 Write-Host "==========================================" -ForegroundColor DarkGray
 Write-Host " EXECUTION FINISHED SUCCESSFULLY " -ForegroundColor Green
