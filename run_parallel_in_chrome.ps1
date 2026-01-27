@@ -1,50 +1,82 @@
-$PROJECT_DIR = "C:\SeleniumPythonAutomationBDD"
+Write-Host "==========================================" -ForegroundColor DarkGray
+Write-Host " Behave + Selenium + Allure (PARALLEL RUN) " -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor DarkGray
 
-Write-Host "Enabling virtual environment..." -ForegroundColor Cyan
+# ---------------------------------------------
+# Go to project root (works in local & CI)
+# ---------------------------------------------
+$PROJECT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location $PROJECT_DIR
+
+Write-Host "Project directory:" (Get-Location) -ForegroundColor Gray
+
+# ---------------------------------------------
+# Activate virtual environment
+# ---------------------------------------------
+Write-Host "Enabling virtual environment..." -ForegroundColor Cyan
 .\.venv\Scripts\Activate.ps1
 
-Write-Host "Deleting old results..." -ForegroundColor Cyan
+# ---------------------------------------------
+# Clean previous results
+# ---------------------------------------------
+Write-Host "Deleting old Allure results..." -ForegroundColor Cyan
 Remove-Item reports\allure-results -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item reports\allure-report -Recurse -Force -ErrorAction SilentlyContinue
+
 New-Item -ItemType Directory -Path reports\allure-results | Out-Null
 
-Write-Host "Executing Features Scenarios in PARALLEL using Chrome..." -ForegroundColor Yellow
+# ---------------------------------------------
+# Parallel execution
+# ---------------------------------------------
+Write-Host "Executing Features tests Behave in PARALLEL using Chrome..." -ForegroundColor Yellow
 
 $jobs = @()
 
-$jobs += Start-Job -ScriptBlock {
-    Set-Location "C:\SeleniumPythonAutomationBDD"
+$jobs += Start-Job {
+    Set-Location $using:PROJECT_DIR
     behave features/login.feature `
-      -D browser=chrome `
-      -f allure_behave.formatter:AllureFormatter `
-      -o reports/allure-results/worker-1
+        -D browser=chrome `
+        -f allure_behave.formatter:AllureFormatter `
+        -o reports/allure-results/worker-1
 }
 
-$jobs += Start-Job -ScriptBlock {
-    Set-Location "C:\SeleniumPythonAutomationBDD"
+$jobs += Start-Job {
+    Set-Location $using:PROJECT_DIR
     behave features/cart.feature `
-      -D browser=chrome `
-      -f allure_behave.formatter:AllureFormatter `
-      -o reports/allure-results/worker-2
+        -D browser=chrome `
+        -f allure_behave.formatter:AllureFormatter `
+        -o reports/allure-results/worker-2
 }
 
-$jobs += Start-Job -ScriptBlock {
-    Set-Location "C:\SeleniumPythonAutomationBDD"
+$jobs += Start-Job {
+    Set-Location $using:PROJECT_DIR
     behave features/checkout.feature `
-      -D browser=chrome `
-      -f allure_behave.formatter:AllureFormatter `
-      -o reports/allure-results/worker-3
+        -D browser=chrome `
+        -f allure_behave.formatter:AllureFormatter `
+        -o reports/allure-results/worker-3
 }
 
-# ⏳ Wait to all jopbs
+# ---------------------------------------------
+# Wait for all jobs
+# ---------------------------------------------
+Write-Host "Waiting for parallel jobs to finish..." -ForegroundColor Cyan
 Wait-Job $jobs
-
-# Show Output Behave
 Receive-Job $jobs | Out-Host
+Remove-Job $jobs
 
+# ---------------------------------------------
+# Generate Allure HTML report
+# ---------------------------------------------
 Write-Host "Generating Allure HTML report..." -ForegroundColor Cyan
-cmd /c "allure generate reports/allure-results/** -o reports/allure-report"
+cmd /c "allure generate reports/allure-results/* -o reports/allure-report"
 
+
+# ---------------------------------------------
+# Open Allure report (local only)
+# ---------------------------------------------
 Write-Host "Opening Allure report..." -ForegroundColor Green
 cmd /c "allure open reports/allure-report"
+
+Write-Host "==========================================" -ForegroundColor DarkGray
+Write-Host " EXECUTION FINISHED SUCCESSFULLY " -ForegroundColor Green
+Write-Host "==========================================" -ForegroundColor DarkGray
