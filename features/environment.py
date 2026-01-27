@@ -9,6 +9,7 @@ from pages.login_page import LoginPage
 from pages.products_page import ProductsPage
 from pages.cart_page import CartPage
 from pages.checkout_page import CheckoutPage
+import allure
 
 def before_scenario(context, scenario):
     browser = context.config.userdata.get("browser", "firefox")
@@ -43,7 +44,8 @@ def before_scenario(context, scenario):
     else:
         raise ValueError(f"Browser not supported: {browser}")
 
-    context.driver.maximize_window()
+    context.driver.set_window_size(1920, 1080)
+    context.driver.execute_script("document.body.style.zoom='100%'")
 
     # PAGE OBJECTS
     context.login_page = LoginPage(context.driver)
@@ -51,17 +53,20 @@ def before_scenario(context, scenario):
     context.cart_page = CartPage(context.driver)
     context.checkout_page = CheckoutPage(context.driver)
 
+def take_screenshot(context, scenario):
+    screenshots_dir = "reports/allure-results"
+    os.makedirs(screenshots_dir, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    scenario_name = scenario.name.replace(" ", "_")
+    filename = f"FAILED_{scenario_name}_{timestamp}.png"
+    filepath = os.path.join(screenshots_dir, filename)
+    context.driver.save_screenshot(filepath)
+
+    allure.attach.file(filepath, name=f"Screenshot - {scenario.name}", attachment_type=allure.attachment_type.PNG)
+    print(f"\n📸 Screenshot attached to Allure: {filepath}")
+
 def after_scenario(context, scenario):
     if scenario.status == "failed":
         take_screenshot(context, scenario)
     context.driver.quit()
-
-def take_screenshot(context, scenario):
-    screenshots_dir = "screenshots"
-    os.makedirs(screenshots_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    scenario_name = scenario.name.replace(" ", "_")
-    filename = f"SCENARIO_{scenario_name}_{timestamp}.png"
-    filepath = os.path.join(screenshots_dir, filename)
-    context.driver.save_screenshot(filepath)
-    print(f"\n📸 Screenshot saved: {filepath}")

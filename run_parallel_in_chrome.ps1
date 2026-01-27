@@ -39,7 +39,7 @@ $jobs += Start-Job {
     python -m behave features/login.feature `
         -D browser=chrome `
         -f allure_behave.formatter:AllureFormatter `
-        -o reports/allure-results/worker-1
+        -o reports/allure-results
 }
 
 $jobs += Start-Job {
@@ -49,7 +49,7 @@ $jobs += Start-Job {
     python -m behave features/cart.feature `
         -D browser=chrome `
         -f allure_behave.formatter:AllureFormatter `
-        -o reports/allure-results/worker-2
+        -o reports/allure-results
 }
 
 $jobs += Start-Job {
@@ -59,7 +59,7 @@ $jobs += Start-Job {
     python -m behave features/checkout.feature `
         -D browser=chrome `
         -f allure_behave.formatter:AllureFormatter `
-        -o reports/allure-results/worker-3
+        -o reports/allure-results
 }
 
 # ---------------------------------------------
@@ -69,14 +69,6 @@ Write-Host "Waiting for parallel jobs to finish..." -ForegroundColor Cyan
 Wait-Job $jobs
 Receive-Job $jobs | Out-Host
 Remove-Job $jobs
-
-# ---------------------------------------------
-# Merge Allure results from workers
-# ---------------------------------------------
-Write-Host "Merging Allure results from workers..." -ForegroundColor Cyan
-
-Get-ChildItem reports\allure-results -Recurse -Filter "*.json" |
-    Move-Item -Destination reports\allure-results -Force
 
 # ---------------------------------------------
 # Generate Allure HTML report
