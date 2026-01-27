@@ -1,5 +1,4 @@
 .git/
-.github/
 .pytest_cache/
 .venv/
 .vscode/
@@ -12,3 +11,4 @@ geckodriver.log
 How_to_run.txt
 run_in_chrome.ps1
 run_in_firefox.ps1
+run_parallel_in_firefox.ps1

@@ -1,0 +1,46 @@
+name: Behave Parallel Tests with Allure
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  behave-tests:
+    runs-on: windows-latest   # ⚠️ PowerShell + Chrome
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\Activate.ps1
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install allure-behave
+
+      - name: Install Node.js (for Allure)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Allure
+        run: npm install -g allure
+
+      - name: Run Behave tests in parallel
+        shell: pwsh
+        run: .\run_parallel_in_chrome.ps1
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: reports/allure-report
