@@ -9,3 +9,6 @@ screenshots/
 test/__pycache__
 pages/__pycache__
 geckodriver.log
+How_to_run.txt
+run_in_chrome.ps1
+run_in_firefox.ps1

@@ -12,7 +12,7 @@ from pages.checkout_page import CheckoutPage
 
 def before_scenario(context, scenario):
     browser = context.config.userdata.get("browser", "firefox")
-    headless = context.config.userdata.get("headless", "false").lower() == "true"
+    headless = context.config.userdata.get("headless", "false").lower() == "false" #The browser is not opened during executions
 
     # DRIVER INIT
     if browser == "firefox":
