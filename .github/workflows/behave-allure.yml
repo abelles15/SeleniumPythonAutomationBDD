@@ -1,49 +1,43 @@
-name: Behave Parallel Tests with Allure
+name: Behave Tests with Allure Report
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
 
-  behave-tests:
+  test:
     runs-on: windows-latest
-
-    env:
-      CI: true
-      PYTHON_VERSION: "3.11"
 
     steps:
 
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: "3.11"
           cache: "pip"
 
-      - name: Create virtual environment and install dependencies
+      - name: Install dependencies
         shell: pwsh
         run: |
           python -m venv .venv
           .\.venv\Scripts\Activate.ps1
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install allure-behave
 
-      - name: Setup Node (required for Allure CLI)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Install Allure CLI
+      - name: Install Allure
         run: npm install -g allure-commandline
 
-      - name: Run Behave tests in parallel
+      - name: Run tests
         shell: pwsh
         run: |
           .\.venv\Scripts\Activate.ps1
@@ -51,20 +45,30 @@ jobs:
 
       - name: Generate Allure report
         if: always()
-        shell: pwsh
-        run: |
-          allure generate reports/allure-results --clean -o reports/allure-report
+        run: allure generate reports/allure-results --clean -o reports/allure-report
 
-      - name: Upload Allure Results
+      - name: Setup GitHub Pages
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: reports/allure-results
+        uses: actions/configure-pages@v5
 
-      - name: Upload Allure Report
+      - name: Upload report artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: allure-report
           path: reports/allure-report
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
