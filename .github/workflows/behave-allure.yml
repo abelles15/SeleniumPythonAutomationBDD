@@ -2,48 +2,68 @@ name: Behave Parallel Tests with Allure
 
 on:
   push:
+    branches: [ main, develop ]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  
+
   behave-tests:
-    runs-on: windows-latest   # ⚠️ PowerShell + Chrome
+    runs-on: windows-latest
 
     env:
-      CI: true 
+      CI: true
+      PYTHON_VERSION: "3.11"
 
     steps:
-      - name: Checkout code
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
 
-      - name: Install dependencies
+      - name: Create virtual environment and install dependencies
         shell: pwsh
         run: |
           python -m venv .venv
           .\.venv\Scripts\Activate.ps1
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install allure-behave
 
-      - name: Install Node.js (for Allure)
+      - name: Setup Node (required for Allure CLI)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
-      - name: Install Allure
-        run: npm install -g allure
+      - name: Install Allure CLI
+        run: npm install -g allure-commandline
 
       - name: Run Behave tests in parallel
         shell: pwsh
-        run: .\run_parallel_in_chrome.ps1
+        run: |
+          .\.venv\Scripts\Activate.ps1
+          .\run_parallel_in_chrome.ps1
+
+      - name: Generate Allure report
+        if: always()
+        shell: pwsh
+        run: |
+          allure generate reports/allure-results --clean -o reports/allure-report
+
+      - name: Upload Allure Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: reports/allure-results
 
       - name: Upload Allure Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
